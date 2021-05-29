@@ -39,6 +39,8 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 
 	protected boolean beforeExistingAdvisors = false;
 
+	// 这里会缓存所有被处理的Bean
+	// eligible：合适的
 	private final Map<Class<?>, Boolean> eligibleBeans = new ConcurrentHashMap<>(256);
 
 
@@ -68,11 +70,15 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 			return bean;
 		}
 
+		//如果被拦截的bean已经是代理类
 		if (bean instanceof Advised) {
 			Advised advised = (Advised) bean;
 			if (!advised.isFrozen() && isEligible(AopUtils.getTargetClass(bean))) {
 				// Add our local Advisor to the existing proxy's Advisor chain...
+				// 并且beforeExistingAdvisors=true的时候，
 				if (this.beforeExistingAdvisors) {
+					//把当前切面放到代理类切面的第一位
+					//beforeExistingAdvisors参数的作用是为了保证验证切面优先于其他的切面
 					advised.addAdvisor(0, this.advisor);
 				}
 				else {
@@ -82,6 +88,9 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 			}
 		}
 
+		// 如果被拦截的bean不是一个代理类。
+		// 先校验一下这个类是否有资格添加上 validated的切面。
+		// 原理就是扫描这个类上面是否有@validated注解
 		if (isEligible(bean, beanName)) {
 			ProxyFactory proxyFactory = prepareProxyFactory(bean, beanName);
 			if (!proxyFactory.isProxyTargetClass()) {
@@ -123,6 +132,7 @@ public abstract class AbstractAdvisingBeanPostProcessor extends ProxyProcessorSu
 	 * @see AopUtils#canApply(Advisor, Class)
 	 */
 	protected boolean isEligible(Class<?> targetClass) {
+		// 首次进来eligible的值肯定为null
 		Boolean eligible = this.eligibleBeans.get(targetClass);
 		if (eligible != null) {
 			return eligible;

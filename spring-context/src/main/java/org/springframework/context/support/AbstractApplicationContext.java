@@ -549,41 +549,83 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
+			/**
+			 * 主要有13个方法
+			 *
+			 *
+			 */
 			StartupStep contextRefresh = this.applicationStartup.start("spring.context.refresh");
 
+			/**
+			 * 做容器刷新前的准备工作：
+			 * 1. 设置容器的启动时间
+			 * 2. 设置活跃状态为 true
+			 * 3. 设置关闭状态为 false
+			 * 4. 获取Environment对象，并加载当前系统的属性值到 Environment
+			 * 5. 准备监听器和事件的集合对象，默认为空
+			 */
 			// Prepare this context for refreshing.
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
+			/**
+			 * beanFactory的准备工作，对各种属性进行填充
+			 */
 			// Prepare the bean factory for use in this context.
 			prepareBeanFactory(beanFactory);
 
 			try {
+				/**
+				 * 留给子类扩展，
+				 * 可以看 web的代码，有实现
+				 */
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
 				StartupStep beanPostProcess = this.applicationStartup.start("spring.context.beans.post-process");
+
+				/**
+				 * 执行 BeanFactoryPostProcessor
+				 */
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
+				/**
+				 * 注册 BeanPostProcessor
+				 */
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 				beanPostProcess.end();
 
+				/**
+				 * 为上下文初始化message源，即不同语言的消息体，国际化处理
+				 */
 				// Initialize message source for this context.
 				initMessageSource();
 
+				/**
+				 * 初始化事件监听多路广播器
+				 */
 				// Initialize event multicaster for this context.
 				initApplicationEventMulticaster();
 
+				/**
+				 * 留给子类来初始化其它的bean
+				 */
 				// Initialize other special beans in specific context subclasses.
 				onRefresh();
 
+				/**
+				 * 在注册的bean中查找listener bean,注册到消息广播器中
+				 */
 				// Check for listener beans and register them.
 				registerListeners();
 
+				/**
+				 * 初始化剩余的单例（非）
+				 */
 				// Instantiate all remaining (non-lazy-init) singletons.
 				finishBeanFactoryInitialization(beanFactory);
 
@@ -635,6 +677,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			}
 		}
 
+		/**
+		 * 初始化属性资源
+		 */
 		// Initialize any placeholder property sources in the context environment.
 		initPropertySources();
 
@@ -919,6 +964,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Allow for caching all bean definition metadata, not expecting further changes.
 		beanFactory.freezeConfiguration();
 
+		/**
+		 * 开始实例化
+		 */
 		// Instantiate all remaining (non-lazy-init) singletons.
 		beanFactory.preInstantiateSingletons();
 	}
